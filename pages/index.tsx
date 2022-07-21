@@ -7,7 +7,7 @@ const Home: NextPage = () => {
   return (
     <div>
       <Head>
-        <title>Joydeeeep's Blog</title>
+        <title>Joydeeeep&#39;s Blog</title>
         <meta name="description" content="Web3 blog by web3 nerd." />
       </Head>
       <div className="w-full max-w-[912px] mx-auto">

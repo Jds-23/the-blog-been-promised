@@ -7,7 +7,7 @@ const Blogs: NextPage = () => {
   return (
     <div>
       <Head>
-        <title>Joydeeeep's Blog</title>
+        <title>Joydeeeep&#39;s Blog</title>
         <meta name="description" content="Web3 blog by web3 nerd." />
       </Head>
       <div className="w-full max-w-[912px] mx-auto">
@@ -17,9 +17,9 @@ const Blogs: NextPage = () => {
               Build on-Chain Dynamic NFT using Tableland
             </h2>
             <p className="leading-5	">
-              Rust helps developers write fast software that's memory-efficient.
-              It's a modern replacement for languages like C++ or C with a focus
-              on code safety and concise syntax.
+              Rust helps developers write fast software that&#39;s
+              memory-efficient. It&#39;s a modern replacement for languages like
+              C++ or C with a focus on code safety and concise syntax.
             </p>
             <span className="text-sm mt-auto">23 days ago</span>
           </div>
@@ -28,9 +28,9 @@ const Blogs: NextPage = () => {
               Build on-Chain Dynamic NFT using Tableland
             </h2>
             <p className="leading-5	">
-              Rust helps developers write fast software that's memory-efficient.
-              It's a modern replacement for languages like C++ or C with a focus
-              on code safety and concise syntax.
+              Rust helps developers write fast software that&#39;s
+              memory-efficient. It&#39;s a modern replacement for languages like
+              C++ or C with a focus on code safety and concise syntax.
             </p>
             <span className="text-sm mt-auto">23 days ago</span>
           </div>
