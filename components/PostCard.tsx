@@ -13,7 +13,7 @@ const PostCard = ({
 }) => {
   return (
     <Link href={`/blog/${slug}`}>
-      <a className="border-2 flex flex-col rounded-xl min-h-28 border-black p-2 border-solid">
+      <a className="border-2 flex flex-col rounded-xl min-h-28 border-black p-2 border-solid transition-all hover:scale-[1.01]">
         <h2 className="font-bold mb-2 leading-5 tracking-tighter text-xl">
           {title}
         </h2>

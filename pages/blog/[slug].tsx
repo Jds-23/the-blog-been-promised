@@ -44,6 +44,9 @@ const Blog = ({ post }: Props) => {
           <article className="mt-20 w-full max-w-2xl mx-auto mb-32 relative">
             <Head>
               <title>{post.title as string} | Blog by Joydeep</title>
+              <meta content={post.description} name="description"></meta>
+              <meta content={post.description} property="og:description"></meta>
+              <meta content={post.title} property="og:title"></meta>
               <meta property="og:image" content={post.cover} />
             </Head>
             <button
@@ -89,9 +92,9 @@ export async function getStaticProps({ params }: Params) {
     "slug",
     "content",
     "cover",
+    "description",
   ]);
   const content = await markdownToHtml(post.content || "");
-  // console.log(await getFileBySlug(params.slug));
   return {
     props: {
       post: {
