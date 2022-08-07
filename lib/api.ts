@@ -84,9 +84,11 @@ export async function getFileBySlug(slug: string) {
 }
 export function getAllPosts(fields: string[] = []) {
   const slugs = getPostSlugs();
+  const isMainnet = process.env.IS_MAINNET === "true";
   const posts = slugs
-    .map((slug) => getPostBySlug(slug, fields))
+    .map((slug) => getPostBySlug(slug, ["published", ...fields]))
     // sort posts by date in descending order
+    .filter((post) => (isMainnet ? post.published : true))
     .sort((post1, post2) => (post1.date > post2.date ? -1 : 1));
   return posts;
 }
