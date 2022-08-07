@@ -1,8 +1,7 @@
+import PostCard from "@components/PostCard";
 import { getAllPosts } from "lib/api";
-import type { GetStaticProps, InferGetStaticPropsType, NextPage } from "next";
+import type { InferGetStaticPropsType } from "next";
 import Head from "next/head";
-import Image from "next/image";
-import styles from "../styles/Home.module.css";
 
 export const getStaticProps = async () => {
   const allPosts = getAllPosts([
@@ -18,7 +17,6 @@ export const getStaticProps = async () => {
   };
 };
 const Home = ({ posts }: InferGetStaticPropsType<typeof getStaticProps>) => {
-  console.log(posts);
   return (
     <div>
       <Head>
@@ -27,13 +25,24 @@ const Home = ({ posts }: InferGetStaticPropsType<typeof getStaticProps>) => {
       </Head>
       <div className="w-full max-w-[912px] mx-auto">
         <div className=" relative flex flex-col items-center mb-7 sm:mb-12 ">
-          <img
-            src={"/jds.jpg"}
-            className="object-contain mt-20 border-2 border-black mb-3 border-solid w-full max-w-[250px] rounded-2xl"
-          />
-          <h1 className="text-black text-[32px] mb-2 font-bold">
+          <a
+            href="https://twitter.com/0xJoydeeeep"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <img
+              src={"/jds.jpg"}
+              className="object-contain cursor-pointer transition hover:scale-[1.01] hover:rotate-2 mt-20 border-2 border-black mb-3 border-solid w-full max-w-[250px] rounded-2xl"
+            />
+          </a>
+          <a
+            href="https://twitter.com/0xJoydeeeep"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-black cursor-pointer hover:underline text-[32px] mb-2 font-bold"
+          >
             Joydeep Singha
-          </h1>
+          </a>
           <h2 className="text-center w-full max-w-[403px]">
             Learning 📖 & Building 🛠 on web3. I mostly build using NextJs,
             TypeScript, Tailwind, Polgon & IPFS.{" "}
@@ -44,40 +53,19 @@ const Home = ({ posts }: InferGetStaticPropsType<typeof getStaticProps>) => {
             My Posts
           </span>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5">
-            <div className="border-2 flex flex-col rounded-xl h-28 border-black p-3 border-solid">
-              <h2 className="font-bold text-xl">
-                Build on-Chain Dynamic NFT using Tableland
-              </h2>
-              <span className="text-sm mt-auto">23 days ago</span>
-            </div>
-            <div className="border-2 flex flex-col rounded-xl h-28 border-black p-3 border-solid">
-              <h2 className="font-bold text-xl">
-                Build on-Chain Dynamic NFT using Tableland
-              </h2>
-              <span className="text-sm mt-auto">23 days ago</span>
-            </div>
-            <div className="border-2 flex flex-col rounded-xl h-28 border-black p-3 border-solid">
-              <h2 className="font-bold text-xl">
-                Build on-Chain Dynamic NFT using Tableland
-              </h2>
-              <span className="text-sm mt-auto">23 days ago</span>
-            </div>
+            {posts.map((i) => {
+              return (
+                <PostCard
+                  slug={i.slug}
+                  key={i.slug}
+                  title={i.title}
+                  date={i.date}
+                />
+              );
+            })}
           </div>
         </div>
       </div>
-
-      <footer className={styles.footer}>
-        <a
-          href="https://vercel.com?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Powered by{" "}
-          <span className={styles.logo}>
-            <Image src="/vercel.svg" alt="Vercel Logo" width={72} height={16} />
-          </span>
-        </a>
-      </footer>
     </div>
   );
 };

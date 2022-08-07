@@ -1,9 +1,25 @@
-import type { NextPage } from "next";
+import DateFormatter from "@components/DateFormatter";
+import { getAllPosts } from "lib/api";
+import type { InferGetStaticPropsType, NextPage } from "next";
 import Head from "next/head";
 import Image from "next/image";
+import Link from "next/link";
 import styles from "../styles/Home.module.css";
 
-const Blogs: NextPage = () => {
+export const getStaticProps = async () => {
+  const allPosts = getAllPosts([
+    "title",
+    "date",
+    "slug",
+    "cover",
+    "description",
+  ]);
+
+  return {
+    props: { posts: allPosts },
+  };
+};
+const Blogs = ({ posts }: InferGetStaticPropsType<typeof getStaticProps>) => {
   return (
     <div>
       <Head>
@@ -12,28 +28,17 @@ const Blogs: NextPage = () => {
       </Head>
       <div className="w-full max-w-[912px] mx-auto">
         <div className=" relative grid grid-cols-1 pt-20 gap-5">
-          <div className="flex flex-col">
-            <h2 className="font-bold text-xl">
-              Build on-Chain Dynamic NFT using Tableland
-            </h2>
-            <p className="leading-5	">
-              Rust helps developers write fast software that&#39;s
-              memory-efficient. It&#39;s a modern replacement for languages like
-              C++ or C with a focus on code safety and concise syntax.
-            </p>
-            <span className="text-sm mt-auto">23 days ago</span>
-          </div>
-          <div className="flex flex-col">
-            <h2 className="font-bold text-xl">
-              Build on-Chain Dynamic NFT using Tableland
-            </h2>
-            <p className="leading-5	">
-              Rust helps developers write fast software that&#39;s
-              memory-efficient. It&#39;s a modern replacement for languages like
-              C++ or C with a focus on code safety and concise syntax.
-            </p>
-            <span className="text-sm mt-auto">23 days ago</span>
-          </div>
+          {posts?.map((post) => (
+            <Link key={post.slug} href={`/blog/${post.slug}`}>
+              <a className="flex flex-col" key={post.slug}>
+                <h2 className="font-bold text-xl">{post.title}</h2>
+                <p className="leading-5	">{post.description}</p>
+                <span className="text-sm mt-auto">
+                  <DateFormatter dateString={post.date} />
+                </span>
+              </a>
+            </Link>
+          ))}
         </div>
       </div>
 

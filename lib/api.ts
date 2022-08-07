@@ -1,6 +1,14 @@
-import fs from "fs";
+import fs, { readFileSync } from "fs";
 import { join } from "path";
 import matter from "gray-matter";
+
+import { bundleMDX } from "mdx-bundler";
+import readingTime from "reading-time";
+
+import rehypeSlug from "rehype-slug";
+import rehypeCodeTitles from "rehype-code-titles";
+import rehypeAutolinkHeadings from "rehype-autolink-headings";
+import rehypePrism from "rehype-prism-plus";
 
 const postsDirectory = join(process.cwd(), "_posts");
 
@@ -9,8 +17,8 @@ export function getPostSlugs() {
 }
 
 export function getPostBySlug(slug: string, fields: string[] = []) {
-  const realSlug = slug.replace(/\.md$/, "");
-  const fullPath = join(postsDirectory, `${realSlug}.md`);
+  const realSlug = slug.replace(/\.mdx$/, "");
+  const fullPath = join(postsDirectory, `${realSlug}.mdx`);
   const fileContents = fs.readFileSync(fullPath, "utf8");
   const { data, content } = matter(fileContents);
 
@@ -36,7 +44,44 @@ export function getPostBySlug(slug: string, fields: string[] = []) {
 
   return items;
 }
+export async function getFileBySlug(slug: string) {
+  const realSlug = slug.replace(/\.mdx$/, "");
 
+  const source = readFileSync(
+    join(process.cwd(), "_posts", `${realSlug}.mdx`),
+    "utf8"
+  );
+  const { code, frontmatter } = await bundleMDX({
+    source,
+    mdxOptions(options) {
+      options.rehypePlugins = [
+        ...(options?.rehypePlugins ?? []),
+        rehypeSlug,
+        rehypeCodeTitles,
+        rehypePrism,
+        [
+          rehypeAutolinkHeadings,
+          {
+            properties: {
+              className: ["anchor"],
+            },
+          },
+        ],
+      ];
+      return options;
+    },
+  });
+
+  return {
+    code,
+    frontMatter: {
+      wordCount: source.split(/\s+/gu).length,
+      readingTime: readingTime(source),
+      slug: slug || null,
+      ...frontmatter,
+    },
+  };
+}
 export function getAllPosts(fields: string[] = []) {
   const slugs = getPostSlugs();
   const posts = slugs

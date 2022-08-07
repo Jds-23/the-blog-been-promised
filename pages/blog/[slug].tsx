@@ -1,11 +1,13 @@
 import CoverImage from "@components/CoverImage";
 import DateFormatter from "@components/DateFormatter";
-import PostBody from "@components/PostBody";
+import MDXcomponents from "@components/MDXcomponents";
 import { getAllPosts, getPostBySlug } from "lib/api";
 import markdownToHtml from "lib/markdownToHtml";
 import Head from "next/head";
 import { useRouter } from "next/router";
 import React from "react";
+import { MDXRemote, MDXRemoteSerializeResult } from "next-mdx-remote";
+
 export type Tag = {
   color: string;
   id: string;
@@ -19,7 +21,10 @@ export type BlogPost = {
   tags: Tag[];
   description: string;
   date: string;
-  content: string;
+  content: MDXRemoteSerializeResult<
+    Record<string, unknown>,
+    Record<string, string>
+  >;
 };
 
 type Props = {
@@ -29,7 +34,6 @@ type Props = {
 
 const Blog = ({ post }: Props) => {
   const router = useRouter();
-  console.log(post);
   return (
     <div>
       {" "}
@@ -39,22 +43,32 @@ const Blog = ({ post }: Props) => {
         <>
           <article className="mt-20 w-full max-w-2xl mx-auto mb-32 relative">
             <Head>
-              <title>{post.title} | Blog by Joydeep</title>
+              <title>{post.title as string} | Blog by Joydeep</title>
               <meta property="og:image" content={post.cover} />
             </Head>
-            {/* <PostHeader
-              title={post.title}
-              coverImage={post.coverImage}
-              date={post.date}
-              author={post.author}
-            /> */}
-            <h1 className="tracking-tight mb-4 text-3xl font-bold text-black md:text-5xl dark:text-white">
+            <button
+              onClick={() => router.back()}
+              className="font-bold underline"
+            >
+              Back
+            </button>
+            <h1 className="tracking-tight mb-4 text-3xl font-bold text-black md:text-5xl ">
               {post.title}
             </h1>
             <CoverImage src={post.cover} title={post.title} />
-            <DateFormatter dateString={post.date} />
-
-            <PostBody content={post.content} />
+            <span className="text-sm font-bold">
+              <DateFormatter dateString={post.date} />
+            </span>
+            <div className="prose">
+              <MDXRemote
+                {...post.content}
+                components={
+                  {
+                    ...MDXcomponents,
+                  } as any
+                }
+              />
+            </div>
           </article>
         </>
       )}
@@ -77,7 +91,7 @@ export async function getStaticProps({ params }: Params) {
     "cover",
   ]);
   const content = await markdownToHtml(post.content || "");
-
+  // console.log(await getFileBySlug(params.slug));
   return {
     props: {
       post: {
