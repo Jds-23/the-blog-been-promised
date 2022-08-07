@@ -48,6 +48,14 @@ const Blog = ({ post }: Props) => {
               <meta content={post.description} property="og:description"></meta>
               <meta content={post.title} property="og:title"></meta>
               <meta property="og:image" content={post.cover} />
+              <meta
+                content={post.description}
+                property="twitter:description"
+              ></meta>
+              <meta content={post.title} property="twitter:title"></meta>
+              <meta property="twitter:image" content={post.cover} />
+              <meta property="og:type" content="website"></meta>
+              <meta content="summary_large_image" name="twitter:card" />
             </Head>
             <button
               onClick={() => router.back()}
