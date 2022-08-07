@@ -1,9 +1,24 @@
-import type { NextPage } from "next";
+import { getAllPosts } from "lib/api";
+import type { GetStaticProps, InferGetStaticPropsType, NextPage } from "next";
 import Head from "next/head";
 import Image from "next/image";
 import styles from "../styles/Home.module.css";
 
-const Home: NextPage = () => {
+export const getStaticProps = async () => {
+  const allPosts = getAllPosts([
+    "title",
+    "date",
+    "slug",
+    "cover",
+    "description",
+  ]);
+
+  return {
+    props: { posts: allPosts },
+  };
+};
+const Home = ({ posts }: InferGetStaticPropsType<typeof getStaticProps>) => {
+  console.log(posts);
   return (
     <div>
       <Head>

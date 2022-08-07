@@ -17,7 +17,7 @@
     "baseUrl": ".",
     "paths": {
       "@components*": ["components*"]
-      // "@abis*": ["src/abis*"],
+      // "@types*": ["types*"]
       // "@utils*": ["src/utils*"],
       // "@lib*": ["src/lib*"],
       // "@gql*": ["src/graphql*"],
