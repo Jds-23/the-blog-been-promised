@@ -5,8 +5,11 @@ import { getAllPosts, getPostBySlug } from "lib/api";
 import markdownToHtml from "lib/markdownToHtml";
 import Head from "next/head";
 import { useRouter } from "next/router";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { MDXRemote, MDXRemoteSerializeResult } from "next-mdx-remote";
+import nFormatter from "utils/nFormatter";
+import { EyeIcon } from "@heroicons/react/outline";
+import readingTime from "reading-time";
 
 export type Tag = {
   color: string;
@@ -16,11 +19,13 @@ export type Tag = {
 
 export type BlogPost = {
   id: string;
+  slug: string;
   cover: string;
   title: string;
   tags: Tag[];
   description: string;
   date: string;
+  readingtime: number;
   content: MDXRemoteSerializeResult<
     Record<string, unknown>,
     Record<string, string>
@@ -34,6 +39,21 @@ type Props = {
 
 const Blog = ({ post }: Props) => {
   const router = useRouter();
+  const [views, setviews] = useState<number>();
+  useEffect(() => {
+    if (post?.slug) {
+      const options = {
+        method: "POST",
+        headers: { "content-type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({ postId: post.slug }),
+      };
+
+      fetch("/api/viewedPost", options)
+        .then((response) => response.json())
+        .then((response) => setviews(response.viewed))
+        .catch((err) => console.error(err));
+    }
+  }, [post]);
   return (
     <div>
       {" "}
@@ -66,9 +86,20 @@ const Blog = ({ post }: Props) => {
               {post.title}
             </h1>
             <CoverImage src={post.cover} title={post.title} />
-            <span className="text-sm font-bold">
-              <DateFormatter dateString={post.date} />
-            </span>
+            <div className="flex justify-between">
+              <span className="text-sm font-bold">
+                <DateFormatter dateString={post.date} />
+              </span>
+              <div className="flex text-sm">
+                {views && (
+                  <div className="text-sm flex items-center">
+                    {nFormatter(views, 3)}
+                    {" views "}
+                  </div>
+                )}
+                &nbsp;|<span>&nbsp;{post.readingtime.minutes} min read</span>
+              </div>
+            </div>
             <div className="prose">
               <MDXRemote
                 {...post.content}
@@ -102,10 +133,12 @@ export async function getStaticProps({ params }: Params) {
     "description",
   ]);
   const content = await markdownToHtml(post.content || "");
+  const readingtime = readingTime(post.content);
   return {
     props: {
       post: {
         ...post,
+        readingtime,
         content,
       },
     },

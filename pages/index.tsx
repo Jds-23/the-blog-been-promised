@@ -1,10 +1,8 @@
 import PostCard from "@components/PostCard";
-import firebase from "../firebase/client";
 import { getAllPosts } from "lib/api";
 import type { InferGetStaticPropsType } from "next";
 import Head from "next/head";
-import { useCollection } from "react-firebase-hooks/firestore";
-import { collection, getFirestore } from "firebase/firestore";
+import { useEffect, useState } from "react";
 export const getStaticProps = async () => {
   const allPosts = getAllPosts([
     "title",
@@ -19,14 +17,18 @@ export const getStaticProps = async () => {
   };
 };
 const Home = ({ posts }: InferGetStaticPropsType<typeof getStaticProps>) => {
-  const db = getFirestore(firebase);
-  const [postsData, postsDataLoading, postsDataError] = useCollection(
-    collection(db, "posts"),
-    {}
-  );
-
-  console.log(postsData?.docs?.map((doc) => console.log(doc)));
-
+  const [viewsmap, setviewsmap] = useState<{ [key: string]: number }>();
+  useEffect(() => {
+    fetch("/api/getPosts")
+      .then((res) => res.json())
+      .then((res) => {
+        let viewsmap: { [key: string]: number } = {};
+        res.map((i: { postId: string; viewed: number }) => {
+          viewsmap = { ...viewsmap, [i.postId]: i.viewed };
+        });
+        setviewsmap(viewsmap);
+      });
+  }, [setviewsmap]);
   return (
     <div>
       <Head>
@@ -70,6 +72,7 @@ const Home = ({ posts }: InferGetStaticPropsType<typeof getStaticProps>) => {
                   key={i.slug}
                   title={i.title}
                   date={i.date}
+                  viewed={viewsmap && viewsmap[i.slug]}
                 />
               );
             })}

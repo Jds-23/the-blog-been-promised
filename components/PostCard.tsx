@@ -1,15 +1,19 @@
 import Link from "next/link";
 import React from "react";
 import DateFormatter from "./DateFormatter";
+import { EyeIcon } from "@heroicons/react/outline";
+import nFormatter from "utils/nFormatter";
 
 const PostCard = ({
   title,
   date,
   slug,
+  viewed,
 }: {
   title: string;
   date: string;
   slug: string;
+  viewed: number | undefined;
 }) => {
   return (
     <Link href={`/blog/${slug}`}>
@@ -17,9 +21,17 @@ const PostCard = ({
         <h2 className="font-bold mb-2 leading-5 tracking-tighter text-xl">
           {title}
         </h2>
-        <span className="text-sm mt-auto">
-          <DateFormatter dateString={date} />
-        </span>
+        <div className="flex mt-auto justify-between">
+          <span className="text-sm">
+            <DateFormatter dateString={date} />
+          </span>
+          {viewed && (
+            <div className="text-sm flex items-center">
+              {nFormatter(viewed, 3)}
+              <EyeIcon className="text-gray-600 h-4 w-4 " />
+            </div>
+          )}
+        </div>
       </a>
     </Link>
   );
