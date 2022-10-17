@@ -25,7 +25,7 @@ export type BlogPost = {
   tags: Tag[];
   description: string;
   date: string;
-  readingtime: number;
+  readingtime: { minutes: string };
   content: MDXRemoteSerializeResult<
     Record<string, unknown>,
     Record<string, string>

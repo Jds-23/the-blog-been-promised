@@ -1,0 +1,283 @@
+---
+title: "Solidity: Writing Factory Contracts the right way"
+description: "Tableland is a protocol for SQL in web3."
+cover: "/DeckCoverPage.png"
+date: "2020-03-16T05:35:07.322Z"
+published: false
+---
+
+## What's a Factory Contract? 🏭
+
+As the name suggests, a factory contract is a smart contract that produces other smart contracts. The most common example of a factory contract is the [Uniswap Pool Contract](https://github.com/Uniswap/v2-core/blob/master/contracts/UniswapV2Factory.sol). Whenever you create a new token pool, the factory contracts deploy a new [Pair Contract](https://github.com/Uniswap/v2-core/blob/master/contracts/UniswapV2Pair.sol).
+
+A Factory contract can deploy other contracts which follow similar certain properties and some unique properties. Just like a Candy Factory can produce candies of different flavors.
+
+## Why do you need Factory Contracts? 🤷‍♂️
+
+Here's a list of benefits of using a factory contract
+
+- Automate the deployment of similar contracts
+- Keep a track of multiple deployed contracts in one factory contract and make their management easier
+- Saves gas on multiple contract deployments
+- Improve contract security ([read how](https://consensys.net/diligence/blog/2019/09/factories-improve-smart-contract-security/))
+
+## The Simplest Approach
+
+Let's make [ERC20](https://ethereum.org/en/developers/docs/standards/tokens/erc-20/) factory, that deploys new ERC20 tokens with the name, symbol and decimals we provide.
+
+We start with making an Interface of ERC20, in here we would declare the functions we would need in our ERC20 contract. Create a `IERC20.sol` file under contracts directory.
+
+```sol:contracts/IERC20.sol
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.13;
+
+interface IERC20 {
+    function totalSupply() external view returns (uint);
+
+    function balanceOf(address account) external view returns (uint);
+
+    function transfer(address recipient, uint amount) external returns (bool);
+
+    function allowance(address owner, address spender) external view returns (uint);
+
+    function approve(address spender, uint amount) external returns (bool);
+
+    function transferFrom(
+        address sender,
+        address recipient,
+        uint amount
+    ) external returns (bool);
+
+    event Transfer(address indexed from, address indexed to, uint value);
+    event Approval(address indexed owner, address indexed spender, uint value);
+}
+
+
+```
+
+Nothing much to understand here, just a simple Contract Interface containing functions declarations (function name, function type, return type & parameters) and event declarations.
+
+Now create a `ERC20.sol` under `contracts` directory.
+
+```sol:contracts/ERC20.sol
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.13;
+
+import "./IERC20.sol";
+
+contract ERC20 is IERC20 {
+    uint public totalSupply;
+    mapping(address => uint) public balanceOf;
+    mapping(address => mapping(address => uint)) public allowance;
+    string public name;
+    string public symbol;
+    uint8 public decimals;
+
+    constructor(string memory _name, string memory _symbol, uint8 _decimals) {
+        name=_name;
+        symbol=_symbol;
+        decimals=_decimals;
+    }
+
+    function transfer(address recipient, uint amount) external returns (bool) {
+        balanceOf[msg.sender] -= amount;
+        balanceOf[recipient] += amount;
+        emit Transfer(msg.sender, recipient, amount);
+        return true;
+    }
+
+    function approve(address spender, uint amount) external returns (bool) {
+        allowance[msg.sender][spender] = amount;
+        emit Approval(msg.sender, spender, amount);
+        return true;
+    }
+
+    function transferFrom(
+        address sender,
+        address recipient,
+        uint amount
+    ) external returns (bool) {
+        allowance[sender][msg.sender] -= amount;
+        balanceOf[sender] -= amount;
+        balanceOf[recipient] += amount;
+        emit Transfer(sender, recipient, amount);
+        return true;
+    }
+
+    function mint(uint amount) external {
+        balanceOf[msg.sender] += amount;
+        totalSupply += amount;
+        emit Transfer(address(0), msg.sender, amount);
+    }
+
+    function burn(uint amount) external {
+        balanceOf[msg.sender] -= amount;
+        totalSupply -= amount;
+        emit Transfer(msg.sender, address(0), amount);
+    }
+}
+
+```
+
+```
+import "./IERC20.sol";
+```
+
+We are importing the IERC20 interface here.
+
+```
+function transfer(address recipient, uint amount) external returns (bool) {
+        balanceOf[msg.sender] -= amount;
+        balanceOf[recipient] += amount;
+        emit Transfer(msg.sender, recipient, amount);
+        return true;
+    }
+
+    function approve(address spender, uint amount) external returns (bool) {
+        allowance[msg.sender][spender] = amount;
+        emit Approval(msg.sender, spender, amount);
+        return true;
+    }
+
+    function transferFrom(
+        address sender,
+        address recipient,
+        uint amount
+    ) external returns (bool) {
+        allowance[sender][msg.sender] -= amount;
+        balanceOf[sender] -= amount;
+        balanceOf[recipient] += amount;
+        emit Transfer(sender, recipient, amount);
+        return true;
+    }
+
+    function mint(uint amount) external {
+        balanceOf[msg.sender] += amount;
+        totalSupply += amount;
+        emit Transfer(address(0), msg.sender, amount);
+    }
+
+    function burn(uint amount) external {
+        balanceOf[msg.sender] -= amount;
+        totalSupply -= amount;
+        emit Transfer(msg.sender, address(0), amount);
+    }
+```
+
+All these are function definitions of standard ERC20 functions. Their name suggest their functions. Not much to explain here.
+
+```
+    constructor(string memory _name, string memory _symbol, uint8 _decimals) {
+        name=_name;
+        symbol=_symbol;
+        decimals=_decimals;
+    }
+```
+
+The contract is initialized using this constructor taking parameters like `name`, `symbol` and `decimals`.
+
+Now starting with the factory contract. The factory contract will deploy new ERC20 contract with `name`, `symbol` and `decimals` we provide in the function. It will be in `Factory.sol` under the contracts directory.
+
+```sol:contracts/Factory.sol
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.13;
+
+import "./ERC20.sol";
+
+contract Factory {
+    ERC20[] public tokens;
+
+    function deployContract(string memory _name, string memory _symbol, uint8 _decimals) public {
+            ERC20 erc20 = new ERC20(_name, _symbol, _decimals);
+            tokens.push(erc20);
+        }
+}
+
+
+```
+
+```
+import "./IERC20.sol";
+```
+
+We are importing again, now the ERC20 contract itself.
+
+```
+ERC20[] public tokens;
+```
+
+`tokens` holds the addresses of child contract deployed by the Factory.
+
+```
+function deployContract(string memory _name, string memory _symbol, uint8 _decimals) public {
+            ERC20 erc20 = new ERC20(_name, _symbol, _decimals);
+            tokens.push(erc20);
+        }
+```
+
+Most important part of the code, `deployContract` function creates new child contract with `new` keyword, very similar to Class and Object approach.
+
+```
+ERC20 erc20 = new ERC20(_name, _symbol, _decimals);
+```
+
+We need to pass the parameters that are needed in constructor of `ERC20` contract.
+
+The major drawback of this approach is high gas costs. Every time `deployContract` is called, a new ERC20 is deployed to the blockchain costing gas-fee of 32,000 Gwei. And to avoid that we can use the Cloned Factory Pattern.
+
+## Cloned Factory Pattern
+
+In Cloned Factory Pattern we deploy only one instance of the contract. The contracts made by the factory contract act as proxy contracts that delegate calls to the initial contract and allow functions to run in the context of the proxy contracts.
+
+[EIP-1167](https://eips.ethereum.org/EIPS/eip-1167) created by [Peter Murray](https://github.com/yarrumretep), [Nate Welch](https://github.com/flygoing) and [Joe Messerman](https://github.com/JAMesserman), helps do exactly that.
+
+We need to install [`@openzeppelin/contracts`](https://www.npmjs.com/package/@openzeppelin/contracts).
+
+We have to change our ERC20 contract a bit. Replace `constructor` with the `initialize` function.
+
+```sol:contracts/ERC20.sol
+
+ // using initialize instead of the constructor
+    function initialize(string memory _name, string memory _symbol, uint8 _decimals)  external
+        initializer {
+        name=_name;
+        symbol=_symbol;
+        decimals=_decimals;
+    }
+    // constructor(string memory _name, string memory _symbol, uint8 _decimals) {
+    //     name=_name;
+    //     symbol=_symbol;
+    //     decimals=_decimals;
+    // }
+
+```
+
+Our Proxy Factory contract looks like.
+
+```sol:contracts/ProxyFactory.sol
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.13;
+
+import "@openzeppelin/contracts/proxy/Clones.sol";
+import "./ERC20.sol";
+contract Factory {
+    ERC20[] public tokens;
+    address public implementation;
+
+    constructor(address _implementation){
+        implementation=_implementation;
+    }
+
+    function deployContract(string memory _name, string memory _symbol, uint8 _decimals) public {
+            ERC20 erc20 = ERC20(Clones.clone(implementation));
+            erc20.initialize(_name,_symbol,_decimals);
+            tokens.push(erc20);
+        }
+}
+```
+
+We are importing `import "@openzeppelin/contracts/proxy/Clones.sol";` from `@openzeppelin/contracts` package. `implementation` holds the address of Contract Instance deployed, we are passing it through constructor.
+
+`Clones.clone(implementation);` clones the contract and returns the address of deployed contract. We then initialize it in `erc20.initialize(_name,_symbol,_decimals);`.
+
+## The Way I do & why 🏗
