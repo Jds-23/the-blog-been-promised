@@ -20,7 +20,7 @@ a {
 }
 
 code {
-  background-color: azure;
+  @apply rounded-sm border-gray-200 bg-gray-50;
 }
 
 .prose .anchor {

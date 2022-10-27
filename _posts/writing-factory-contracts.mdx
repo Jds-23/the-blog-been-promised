@@ -23,9 +23,39 @@ Here's a list of benefits of using a factory contract
 
 ## The Simplest Approach
 
-Let's make [ERC20](https://ethereum.org/en/developers/docs/standards/tokens/erc-20/) factory, that deploys new ERC20 tokens with the name, symbol and decimals we provide.
+We will be making [ERC20](https://ethereum.org/en/developers/docs/standards/tokens/erc-20/) factory, that deploys new ERC20 tokens with the name, symbol and decimals we provide.
 
-We start with making an Interface of ERC20, in here we would declare the functions we would need in our ERC20 contract. Create a `IERC20.sol` file under contracts directory.
+We will be using [hardhat](https://hardhat.org/) for running local blockchain node, compile our contracts and deploy them. We need to have installed [Node/NPM](https://hardhat.org/tutorial/setting-up-the-environment).
+
+Fire up terminal and get working.
+
+```
+mkdir token-factory
+cd token-factory
+npm init -y
+npm install --save-dev hardhat@latest
+```
+
+Cool, now we should have Hardhat. To get a sample project run:
+
+```
+npx hardhat
+```
+
+You will receive prompt
+"image here"
+
+Choose the option** Create a JavaScript project**. Say yes to everything.
+
+To make sure hardhat is working, run:
+
+```
+npx hardhat compile
+```
+
+You should see something like.
+
+Now, We start coding by making an Interface of ERC20, in here we would declare the functions we would need in our ERC20 contract. Create a `IERC20.sol` file under `contracts` directory.
 
 ```sol:contracts/IERC20.sol
 // SPDX-License-Identifier: MIT
@@ -276,8 +306,257 @@ contract Factory {
 }
 ```
 
-We are importing `import "@openzeppelin/contracts/proxy/Clones.sol";` from `@openzeppelin/contracts` package. `implementation` holds the address of Contract Instance deployed, we are passing it through constructor.
+We are importing clone contract from from `@openzeppelin/contracts` package.
 
-`Clones.clone(implementation);` clones the contract and returns the address of deployed contract. We then initialize it in `erc20.initialize(_name,_symbol,_decimals);`.
+```
+import "@openzeppelin/contracts/proxy/Clones.sol";
+```
+
+We are passing the address of the contract instance deployed.
+
+```
+constructor(address _implementation){
+        implementation=_implementation;
+    }
+```
+
+This is the magic✨ line that creates the clone of the contract instance deployed. `Clones.clone(implementation)` clones and returns the address of the contract clone.
+
+```
+ERC20 erc20 = ERC20(Clones.clone(implementation));
+```
+
+We are calling the `initialize` function from ERC20 contract to initialize it the required parameters.
+
+```
+erc20.initialize(_name,_symbol,_decimals);
+```
 
 ## The Way I do & why 🏗
+
+What if you want to generate tokens of different types like ERC20 with capped supply, burnable ERC20, or even an ERC721 token. You have to build different factories for them? Maybe just build different functions?. I use a more dynamic approach. Where you build any type of token, the tokens just have to have the same initialize function parameters. We just keep on adding implementation to factory contract and keep deploying new tokens.
+
+We will start changing the factory contract.
+
+```sol:contracts/ProxyFactory.sol
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.13;
+
+import "@openzeppelin/contracts/proxy/Clones.sol";
+import "./ERC20.sol";
+contract Factory {
+    ERC20[] public tokens;
+    address[] public implementations;
+    uint256 totalImplementaions;
+
+    constructor(){
+        totalImplementaions=0;
+    }
+    function addImplementation(address _implementation) public {
+        implementation.push(_implementation);
+        totalImplementaions+=1;
+    }
+    function deployContract(string memory _name, string memory _symbol, uint8 _decimals) public {
+            ERC20 erc20 = ERC20(Clones.clone(implementation));
+            erc20.initialize(_name,_symbol,_decimals);
+            tokens.push(erc20);
+        }
+}
+```
+
+Our editor will show some error with the contract, that's fine we will fix it.
+
+```
+    address[] public implementations;
+```
+
+Have changed the implementation to an array to store multiple instances' addresses.
+
+```
+function addImplementation(address _implementation) public {
+        implementation.push(_implementation);
+        totalImplementaions+=1;
+    }
+```
+
+Added a new function, to add a new implementation.
+
+Now, we have to change `initialize` function of ERC20 contract.
+
+```sol:contracts/ERC20.sol
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.13;
+
+import "./IERC20.sol";
+
+contract ERC20 is IERC20 {
+    uint public totalSupply;
+    mapping(address => uint) public balanceOf;
+    mapping(address => mapping(address => uint)) public allowance;
+    string public name;
+    string public symbol;
+    uint8 public decimals;
+
+   function initialize(bytes _data)  external
+        initializer {
+        string memory _name;
+        string memory _symbol;
+        uint256 _decimals;
+        (_name, _symbol, _decimals) = dataDecoder(_data);
+        name=_name;
+        symbol=_symbol;
+        decimals=_decimals;
+    }
+
+    function dataDecoder(bytes memory data)
+        internal
+        pure
+        returns (string memory _name, string memory _symbol, uint256 _decimals)
+    {
+        (_name, _symbol, _decimals) = abi.decode(data, (string, string, uint256));
+    }
+
+    function transfer(address recipient, uint amount) external returns (bool) {
+        balanceOf[msg.sender] -= amount;
+        balanceOf[recipient] += amount;
+        emit Transfer(msg.sender, recipient, amount);
+        return true;
+    }
+
+    function approve(address spender, uint amount) external returns (bool) {
+        allowance[msg.sender][spender] = amount;
+        emit Approval(msg.sender, spender, amount);
+        return true;
+    }
+
+    function transferFrom(
+        address sender,
+        address recipient,
+        uint amount
+    ) external returns (bool) {
+        allowance[sender][msg.sender] -= amount;
+        balanceOf[sender] -= amount;
+        balanceOf[recipient] += amount;
+        emit Transfer(sender, recipient, amount);
+        return true;
+    }
+
+    function mint(uint amount) external {
+        balanceOf[msg.sender] += amount;
+        totalSupply += amount;
+        emit Transfer(address(0), msg.sender, amount);
+    }
+
+    function burn(uint amount) external {
+        balanceOf[msg.sender] -= amount;
+        totalSupply -= amount;
+        emit Transfer(msg.sender, address(0), amount);
+    }
+}
+
+```
+
+The initialize functions take only one parameter which is `bytes data`. All parameters are encoded into one. Function `dataDecoder` decodes the encoded bytes and returns the expected data. And they are then initialized.
+
+```
+function initialize(bytes _data)  external
+        initializer {
+        string memory _name;
+        string memory _symbol;
+        uint256 _decimals;
+        (_name, _symbol, _decimals) = dataDecoder(_data);
+        name=_name;
+        symbol=_symbol;
+        decimals=_decimals;
+    }
+```
+
+Now change the `deployContract` function. Takes two parameters the encoded data and the index of the contract instance to deploy. `(bool success, bytes memory returnData) = clone.call(abi.encodeWithSignature("initialize(bytes)",_data));` is the line where initialize function is called. If the calls successfully success is returned as true, and we push the address in our tokens array.
+
+```
+    function deployContract(bytes _data, uint256 _index) public {
+            address clone = Clones.clone(implementations(_index));
+            (bool success, bytes memory returnData) = clone.call(abi.encodeWithSignature("initialize(bytes)",_data));
+            require(success && (returnData.length == 0 || abi.decode(returnData, (bool))), "Initialization Failed");
+            tokens.push(clone);
+        }
+```
+
+Let's write a Capped ERC20 contract and add it to implementation. Create a new file `ERC20Capped.sol` in contracts directory.
+
+```sol:contracts/ERC20Capped.sol
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.13;
+
+import "./IERC20.sol";
+
+contract ERC20 is IERC20 {
+    uint public totalSupply;
+    mapping(address => uint) public balanceOf;
+    mapping(address => mapping(address => uint)) public allowance;
+    string public name;
+    string public symbol;
+    uint8 public decimals;
+    uint256 public cap;
+
+   function initialize(bytes _data)  external
+        initializer {
+        string memory _name;
+        string memory _symbol;
+        uint8 _decimals;
+        uint8 _cap;
+        (_name, _symbol, _decimals, _cap) = dataDecoder(_data);
+        name=_name;
+        symbol=_symbol;
+        decimals=_decimals;
+        cap=_cap;
+    }
+
+    function dataDecoder(bytes memory data)
+        internal
+        pure
+        returns (string memory _name, string memory _symbol, uint256 _decimals, uint8 _cap)
+    {
+        (_name, _symbol, _decimals, _cap) = abi.decode(data, (string, string, uint256, uint8));
+    }
+
+    function transfer(address recipient, uint amount) external returns (bool) {
+        balanceOf[msg.sender] -= amount;
+        balanceOf[recipient] += amount;
+        emit Transfer(msg.sender, recipient, amount);
+        return true;
+    }
+
+    function approve(address spender, uint amount) external returns (bool) {
+        allowance[msg.sender][spender] = amount;
+        emit Approval(msg.sender, spender, amount);
+        return true;
+    }
+
+    function transferFrom(
+        address sender,
+        address recipient,
+        uint amount
+    ) external returns (bool) {
+        allowance[sender][msg.sender] -= amount;
+        balanceOf[sender] -= amount;
+        balanceOf[recipient] += amount;
+        emit Transfer(sender, recipient, amount);
+        return true;
+    }
+
+    function mint(uint amount) external {
+        require(totalSupply + amount <= cap, "ERC20Capped: cap exceeded");
+        balanceOf[msg.sender] += amount;
+        totalSupply += amount;
+        emit Transfer(address(0), msg.sender, amount);
+    }
+
+    function burn(uint amount) external {
+        balanceOf[msg.sender] -= amount;
+        totalSupply -= amount;
+        emit Transfer(msg.sender, address(0), amount);
+    }
+}
+
+```

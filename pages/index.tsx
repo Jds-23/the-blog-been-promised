@@ -57,13 +57,15 @@ const Home = ({ posts }: InferGetStaticPropsType<typeof getStaticProps>) => {
           </a>
           <h2 className="text-center w-full max-w-[403px]">
             Learning 📖 & Building 🛠 on web3. I mostly build using NextJs,
-            TypeScript, Tailwind, Polgon & IPFS.{" "}
+            TypeScript, Tailwind, Polygon & IPFS.{" "}
           </h2>
         </div>
         <div className="relative">
-          <span className="text-black text-[32px] mb-6 font-bold">
-            My Posts
-          </span>
+          {posts.length > 0 && (
+            <span className="text-black text-[32px] mb-6 font-bold">
+              My Posts
+            </span>
+          )}
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5">
             {posts.map((i) => {
               return (
